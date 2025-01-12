@@ -165,21 +165,48 @@ def test_model_on_2022_data(model, data):
     print(comparison.head(10))
 
 
+def recommend_strategy_for_cinema(
+    current_ecrans, current_fauteuils, population_commune, model
+):
+    current_data = pd.DataFrame(
+        {
+            "écrans": [current_ecrans],
+            "fauteuils": [current_fauteuils],
+            "population de la commune": [population_commune],
+        }
+    )
+    current_prediction = model.predict(current_data)[0]
+
+    more_ecrans_data = current_data.copy()
+    more_ecrans_data["écrans"] += 1
+    more_ecrans_prediction = model.predict(more_ecrans_data)[0]
+
+    more_fauteuils_data = current_data.copy()
+    more_fauteuils_data["fauteuils"] += 30
+    more_fauteuils_prediction = model.predict(more_fauteuils_data)[0]
+
+    return {
+        "current_prediction": current_prediction,
+        "more_ecrans_prediction": more_ecrans_prediction,
+        "more_fauteuils_prediction": more_fauteuils_prediction,
+    }
+
+
 cinema_data = get_clean_cinema_data("data/cinemas.csv")
 
 print("Aperçu des données nettoyées :")
 print(cinema_data.head())
 
-# print("\nStatistiques descriptives :")
-# print(cinema_data[["fauteuils", "écrans", "entrées 2021", "entrées 2022"]].describe())
+print("\nStatistiques descriptives :")
+print(cinema_data[["fauteuils", "écrans", "entrées 2021", "entrées 2022"]].describe())
 
-# region_statistics = calculate_region_statistics(cinema_data)
+region_statistics = calculate_region_statistics(cinema_data)
 
-# display_top_and_bottom_regions(region_statistics)
+display_top_and_bottom_regions(region_statistics)
 
-# plot_top_regions(region_statistics)
+plot_top_regions(region_statistics)
 
-# calculate_correlations_and_plot(cinema_data)
+calculate_correlations_and_plot(cinema_data)
 
 X, y = prepare_data_for_modeling(cinema_data)
 
@@ -188,3 +215,40 @@ model = train_and_evaluate_model(X, y)
 
 print("Test du modèle sur les données de 2022 :")
 test_model_on_2022_data(model, cinema_data)
+
+cinema_fictif = {
+    "current_ecrans": 2,
+    "current_fauteuils": 120,
+    "population_commune": 20000,
+}
+strategy_results = recommend_strategy_for_cinema(
+    cinema_fictif["current_ecrans"],
+    cinema_fictif["current_fauteuils"],
+    cinema_fictif["population_commune"],
+    model,
+)
+
+print(
+    "Projection actuelle des entrées annuelles :",
+    strategy_results["current_prediction"],
+)
+print(
+    "Projection avec un écran supplémentaire :",
+    strategy_results["more_ecrans_prediction"],
+)
+print(
+    "Projection avec 30 fauteuils supplémentaires :",
+    strategy_results["more_fauteuils_prediction"],
+)
+
+if (
+    strategy_results["more_ecrans_prediction"]
+    > strategy_results["more_fauteuils_prediction"]
+):
+    print(
+        "Recommandation : Augmentez le nombre d'écrans. Cela devrait avoir un impact plus significatif."
+    )
+else:
+    print(
+        "Recommandation : Augmentez le nombre de fauteuils. Cela devrait avoir un impact plus significatif."
+    )
