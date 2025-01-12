@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 def get_clean_cinema_data(cinema_path):
@@ -73,6 +74,39 @@ def plot_top_regions(statistics, top_n=10):
     plt.show()
 
 
+def calculate_correlations_and_plot(data):
+    data_2022 = data[data["entrées 2022"] > 0]
+
+    correlation_screens = data_2022["écrans"].corr(data_2022["entrées 2022"])
+    correlation_seats = data_2022["fauteuils"].corr(data_2022["entrées 2022"])
+
+    print(
+        "Corrélation entre le nombre d'écrans et les entrées annuelles (2022):",
+        correlation_screens,
+    )
+    print(
+        "Corrélation entre le nombre de fauteuils et les entrées annuelles (2022):",
+        correlation_seats,
+    )
+
+    plt.figure(figsize=(12, 5))
+
+    plt.subplot(1, 2, 1)
+    sns.regplot(
+        x="écrans", y="entrées 2022", data=data_2022, scatter_kws={"alpha": 0.6}
+    )
+    plt.title("Corrélation: Écrans vs Entrées annuelles (2022)")
+
+    plt.subplot(1, 2, 2)
+    sns.regplot(
+        x="fauteuils", y="entrées 2022", data=data_2022, scatter_kws={"alpha": 0.6}
+    )
+    plt.title("Corrélation: Fauteuils vs Entrées annuelles (2022)")
+
+    plt.tight_layout()
+    plt.show()
+
+
 cinema_data = get_clean_cinema_data("data/cinemas.csv")
 
 print("Aperçu des données nettoyées :")
@@ -86,3 +120,5 @@ region_statistics = calculate_region_statistics(cinema_data)
 display_top_and_bottom_regions(region_statistics)
 
 plot_top_regions(region_statistics)
+
+calculate_correlations_and_plot(cinema_data)
