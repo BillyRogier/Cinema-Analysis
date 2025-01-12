@@ -1,6 +1,9 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_absolute_error, r2_score
 
 
 def get_clean_cinema_data(cinema_path):
@@ -107,18 +110,81 @@ def calculate_correlations_and_plot(data):
     plt.show()
 
 
+def prepare_data_for_modeling(data):
+    filtered_data = data.loc[
+        :,
+        [
+            "écrans",
+            "fauteuils",
+            "population de la commune",
+            "entrées 2021",
+        ],
+    ]
+
+    filtered_data = filtered_data.dropna()
+
+    X = filtered_data[["écrans", "fauteuils", "population de la commune"]]
+    y = filtered_data[["entrées 2021"]].mean(axis=1)
+
+    return X, y
+
+
+def train_and_evaluate_model(X, y):
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+
+    model = LinearRegression()
+    model.fit(X_train, y_train)
+
+    y_pred_train = model.predict(X_train)
+    y_pred_test = model.predict(X_test)
+
+    train_r2 = r2_score(y_train, y_pred_train)
+    test_r2 = r2_score(y_test, y_pred_test)
+    test_mae = mean_absolute_error(y_test, y_pred_test)
+
+    print(f"R² sur l'ensemble d'entraînement : {train_r2:.2f}")
+    print(f"R² sur l'ensemble de test : {test_r2:.2f}")
+    print(f"Erreur moyenne absolue (MAE) sur l'ensemble de test : {test_mae:.2f}")
+
+    return model
+
+
+def test_model_on_2022_data(model, data):
+    X_2022 = data[["écrans", "fauteuils", "population de la commune"]]
+    y_2022 = data["entrées 2022"]
+
+    y_pred_2022 = model.predict(X_2022)
+
+    comparison = pd.DataFrame(
+        {"Valeurs réelles (2022)": y_2022, "Prédictions": y_pred_2022}
+    )
+
+    print("Comparaison des prédictions avec les valeurs réelles (2022) :")
+    print(comparison.head(10))
+
+
 cinema_data = get_clean_cinema_data("data/cinemas.csv")
 
 print("Aperçu des données nettoyées :")
 print(cinema_data.head())
 
-print("\nStatistiques descriptives :")
-print(cinema_data[["fauteuils", "écrans", "entrées 2021", "entrées 2022"]].describe())
+# print("\nStatistiques descriptives :")
+# print(cinema_data[["fauteuils", "écrans", "entrées 2021", "entrées 2022"]].describe())
 
-region_statistics = calculate_region_statistics(cinema_data)
+# region_statistics = calculate_region_statistics(cinema_data)
 
-display_top_and_bottom_regions(region_statistics)
+# display_top_and_bottom_regions(region_statistics)
 
-plot_top_regions(region_statistics)
+# plot_top_regions(region_statistics)
 
-calculate_correlations_and_plot(cinema_data)
+# calculate_correlations_and_plot(cinema_data)
+
+X, y = prepare_data_for_modeling(cinema_data)
+
+print("Entraînement et évaluation du modèle :")
+model = train_and_evaluate_model(X, y)
+
+print("Test du modèle sur les données de 2022 :")
+test_model_on_2022_data(model, cinema_data)
